@@ -550,7 +550,7 @@ async fn main() -> Result<()> {
             println!("Access Token: {}", access_token);
 
             // Fetch playlist details
-            let tracks = SpotifyPlaylist::fetch_playlist(playlist_id, &access_token).await?;
+            let tracks = SpotifyPlaylist::fetch_playlist(&playlist_id, &access_token).await?;
             let track_ids: Vec<String> = tracks.into_iter().map(|item| item.track.id).collect();
 
             // Fetch audio features for the tracks
