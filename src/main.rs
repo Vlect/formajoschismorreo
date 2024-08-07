@@ -338,6 +338,10 @@ fn is_valid_spotify_id(id: &str) -> bool {
     id.len() == 22 && id.chars().all(|c| base62_chars.contains(c))
 }
 
+// TO-DO: This is just a provisional solution for executing the addition of tracks
+// Once I find the better way to do it (solve my skill issue with rust :'D),
+// Please remove this function! c:
+
 async fn generate_and_execute_curl_command_for_adding_tracks(
     playlist_id: &str,
     track_ids: Vec<String>,
@@ -374,10 +378,7 @@ async fn generate_and_execute_curl_command_for_adding_tracks(
         println!("Generated curl command:\n{}", curl_command);
 
         // Execute the generated curl command
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(&curl_command)
-            .output()?;
+        let output = Command::new("sh").arg("-c").arg(&curl_command).output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -396,6 +397,9 @@ async fn generate_and_execute_curl_command_for_adding_tracks(
 
     Ok(())
 }
+
+// TO-DO: Make sure I understand why executing this POST request throws an
+// "Invalid base62 ID"
 
 async fn add_tracks_to_playlist(
     playlist_id: &str,
@@ -453,61 +457,6 @@ async fn add_tracks_to_playlist(
     Ok(())
 }
 
-// TO-DO: Make sure I understand why executing this POST request throws an
-// "Invalid base61 id"
-
-//async fn add_tracks_to_playlist(
-//    playlist_id: &str,
-//    track_ids: Vec<String>,
-//    access_token: &str,
-//) -> Result<()> {
-//    let valid_uris: Vec<String> = track_ids
-//        .into_iter()
-//        .filter(|id| id.len() == 22 && id.chars().all(|c| c.is_ascii_alphanumeric()))
-//        .map(|id| format!("spotify:track:{}", id))
-//        .collect();
-//
-//    let client = reqwest::Client::new();
-//
-//    for chunk in valid_uris.chunks(100) {
-//        let url = format!(
-//            "https://api.spotify.com/v1/playlists/{}/tracks",
-//            playlist_id
-//        );
-//
-//        let body = serde_json::json!({
-//            "uris": chunk,
-//            "position": 0,
-//        });
-//
-//        println!("Sending request to: {}", url);
-//        println!("Request body: {}", serde_json::to_string_pretty(&body)?);
-//
-//        let response = client
-//            .post(&url)
-//            .header(AUTHORIZATION, format!("Bearer {}", access_token))
-//            .header(CONTENT_TYPE, "application/json")
-//            .json(&body)
-//            .send()
-//            .await
-//            .context("Failed to send request")?;
-//
-//        let status = response.status();
-//        let text = response.text().await?;
-//        println!("Response status: {}", status);
-//        println!("Response body: {}", text);
-//
-////        if !status.is_success() {
-////            return Err(anyhow::anyhow!(
-////                "Failed to add tracks to playlist: {}",
-////                status
-////            ));
-////        }
-//    }
-//
-//    Ok(())
-//}
-
 async fn get_spotify_user_id(access_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     let url = "https://api.spotify.com/v1/users/smedjan";
@@ -563,7 +512,11 @@ async fn main() -> Result<()> {
     let client_id = std::env::var("SPOTIFY_CLIENT_ID").context("SPOTIFY_CLIENT_ID not defined")?;
     let client_secret =
         std::env::var("SPOTIFY_SECRET_ID").context("SPOTIFY_SECRET_ID not defined")?;
-    let redirect_uri = "http://localhost:8080/callback";
+    let user_id = std::env::var("SPOTIFY_USER_ID").context("SPOTIFY_USER_ID not defined")?;
+    let redirect_uri =
+        std::env::var("SPOTIFY_REDIRECT_URI").context("SPOTIFY_REDIRECT_URI not defined")?;
+    let playlist_id =
+        std::env::var("SPOTIFY_PLAYLIST_ID").context("SPOTIFY_PLAYLIST_ID not defined")?;
     let state = Arc::new(Mutex::new(None));
 
     // Start the local server to handle the callback on port 3000
@@ -597,7 +550,6 @@ async fn main() -> Result<()> {
             println!("Access Token: {}", access_token);
 
             // Fetch playlist details
-            let playlist_id = "0zRPIPxkT6V3LRjVt9aGYp"; // Replace with the actual playlist ID
             let tracks = SpotifyPlaylist::fetch_playlist(playlist_id, &access_token).await?;
             let track_ids: Vec<String> = tracks.into_iter().map(|item| item.track.id).collect();
 
@@ -606,14 +558,17 @@ async fn main() -> Result<()> {
             let categorized_tracks = categorize_tracks(audio_features);
 
             // Create new playlists based on the categories and add the tracks
-            let user_id = "31ycfvri62vgxkafaoku3pii4muy";
-            //get_spotify_user_id(&access_token).await?;
             for (category, track_ids) in categorized_tracks {
                 println!("Creating playlist: {}", category);
                 let playlist_id = create_playlist(&user_id, &category, &access_token).await?;
 
                 // Clone the track_ids here before moving it to add_tracks_to_playlist
-                generate_and_execute_curl_command_for_adding_tracks(&playlist_id, track_ids.clone(), &access_token).await?;
+                generate_and_execute_curl_command_for_adding_tracks(
+                    &playlist_id,
+                    track_ids.clone(),
+                    &access_token,
+                )
+                .await?;
 
                 println!(
                     "Playlist '{}' created with {} tracks.",
