@@ -197,6 +197,7 @@ struct AudioFeatures {
     valence: f32,
     energy: f32,
     tempo: f32,
+    danceability: f32,
     // Add other audio features as needed
 }
 
@@ -276,8 +277,24 @@ fn categorize_tracks(features: Vec<AudioFeatures>) -> HashMap<String, Vec<String
     for feature in features {
         let category = if feature.valence > 0.75 && feature.energy > 0.6 {
             "Happy"
-        } else if feature.valence < 0.4 {
+        } else if feature.valence < 0.4 && feature.energy < 0.4 {
             "Sad"
+        } else if feature.energy > 0.8 {
+            "Energetic"
+        } else if feature.energy < 0.3 && feature.valence > 0.5 {
+            "Calm"
+        } else if feature.valence > 0.5 && feature.energy < 0.6 && feature.valence < 0.75 {
+            "Romantic"
+        } else if feature.valence < 0.4 && feature.energy > 0.4 && feature.energy < 0.6 {
+            "Melancholic"
+        } else if feature.energy > 0.7 && feature.valence < 0.5 {
+            "Aggressive"
+        } else if feature.valence > 0.6 && feature.energy > 0.4 && feature.energy < 0.7 {
+            "Uplifting"
+        } else if feature.valence < 0.5 && feature.energy > 0.4 && feature.energy < 0.7 {
+            "Mysterious"
+        } else if feature.energy > 0.6 && feature.danceability > 0.7 {
+            "Danceable"
         } else {
             "Neutral"
         };
