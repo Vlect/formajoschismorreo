@@ -10,6 +10,9 @@
 9. **Mysterious:** Low to moderate valence, moderate energy, often minor keys or unusual scales.
 10. **Danceable:** High danceability, regardless of valence or energy, focuses on rhythm and beat.
 
+#### Resources for further research
+- [Algorithmic Effects on the Diversity of Consumption on Spotify](https://dl.acm.org/doi/pdf/10.1145/3366423.3380281)
+
 ### Further Ideas:
 - **Contextual Analysis**: If you have access to lyrics or genre data, you could refine these categories even further by considering lyrical content or the genre's typical emotional profile.
 - **Machine Learning**: For even more sophisticated categorization, you could train a machine learning model on labeled data to predict the category based on more features like tempo, key, mode, and other audio features provided by Spotify.
